@@ -13,7 +13,7 @@ class TransactionRepository:
         self._init_schema()
         logger.info("Initialized database schema")
 
-    def _init_schema(self):
+    def _init_schema(self) -> None:
         self.conn.executescript("""
         CREATE TABLE IF NOT EXISTS transactions (
             id INTEGER PRIMARY KEY,
@@ -32,11 +32,11 @@ class TransactionRepository:
         self.conn.commit()
         return self.conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
-    def get_transaction(self, transaction_id: int):
+    def get_transaction(self, transaction_id: int) -> sqlite3.Row:
         row = self.conn.execute("SELECT * FROM transactions WHERE id = ?", (transaction_id,))
         return row.fetchone()
 
-    def get_all_transactions(self, limit: int = 100):
+    def get_all_transactions(self, limit: int = 100) -> list[sqlite3.Row]:
         rows = self.conn.execute("SELECT * FROM transactions ORDER BY date DESC LIMIT ?", (limit,))
         return rows.fetchall()
 
@@ -49,7 +49,7 @@ class TransactionRepository:
         """, (date,))
         return rows.fetchall()
 
-    def delete_transaction(self, transaction_id: int):
+    def delete_transaction(self, transaction_id: int) -> None:
         self.conn.execute("DELETE FROM transactions WHERE id = ?", (transaction_id,))
         self.conn.commit()
     
@@ -62,3 +62,14 @@ class TransactionRepository:
         cursor = self.conn.execute(query, transaction_ids)
         self.conn.commit()
         return cursor.rowcount
+
+    def update_transaction(self, transaction_id: int, data: dict) -> None:
+        """
+        Updates a transaction in the database.
+        """
+        updates = ", ".join(f"{key} = ?" for key in data.keys())
+        values = list(data.values())
+        values.append(transaction_id)
+        query = f"UPDATE transactions SET {updates} WHERE id = ?"
+        self.conn.execute(query, values)
+        self.conn.commit()
