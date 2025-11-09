@@ -52,3 +52,13 @@ class TransactionRepository:
     def delete_transaction(self, transaction_id: int):
         self.conn.execute("DELETE FROM transactions WHERE id = ?", (transaction_id,))
         self.conn.commit()
+    
+    def delete_multiple_transactions(self, transaction_ids: list[int]) -> int:
+        if not transaction_ids:
+            return 0
+        
+        plasceholders = ', '.join('?' for _ in transaction_ids)
+        query = f"DELETE FROM transactions WHERE id IN ({plasceholders})"
+        self.conn.execute(query, transaction_ids)
+        self.conn.commit()
+        return self.conn.total_changes
