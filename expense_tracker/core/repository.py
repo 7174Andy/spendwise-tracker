@@ -57,8 +57,8 @@ class TransactionRepository:
         if not transaction_ids:
             return 0
         
-        plasceholders = ', '.join('?' for _ in transaction_ids)
-        query = f"DELETE FROM transactions WHERE id IN ({plasceholders})"
-        self.conn.execute(query, transaction_ids)
+        placeholders = ', '.join('?' for _ in transaction_ids)
+        query = f"DELETE FROM transactions WHERE id IN ({placeholders})"
+        cursor = self.conn.execute(query, transaction_ids)
         self.conn.commit()
-        return self.conn.total_changes
+        return cursor.rowcount
