@@ -106,3 +106,34 @@ class TransactionRepository:
         query = f"UPDATE transactions SET {updates} WHERE id = ?"
         self.conn.execute(query, values)
         self.conn.commit()
+
+class MerchantCategoryRepository:
+    """
+    A repository for managing merchant categories.
+    """
+    def __init__(self, db_path: str):
+        self.conn = sqlite3.connect(db_path, check_same_thread=False)
+        self.conn.row_factory = sqlite3.Row
+        self._init_schema()
+        logger.info("Initialized merchant category database schema")
+
+    def _init_schema(self) -> None:
+        self.conn.executescript("""
+            CREATE TABLE IF NOT EXISTS merchant_categories (
+                merchant_key TEXT PRIMARY KEY,
+                category TEXT NOT NULL
+            );
+        """)
+
+    def set_category(self, merchant_key: str, category: str) -> None:
+        self.conn.execute("""
+            INSERT INTO merchant_categories (merchant_key, category)
+            VALUES (?, ?)
+            ON CONFLICT(merchant_key) DO UPDATE SET category=excluded.category
+        """, (merchant_key, category))
+        self.conn.commit()
+
+    def get_category(self, merchant_key: str) -> str | None:
+        row = self.conn.execute("SELECT category FROM merchant_categories WHERE merchant_key = ?", (merchant_key,))
+        result = row.fetchone()
+        return result["category"] if result else None
