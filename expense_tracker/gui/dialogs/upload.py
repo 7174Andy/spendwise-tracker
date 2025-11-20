@@ -57,8 +57,7 @@ class UploadDialog(tk.Toplevel):
                     category="Uncategorized",
                     description=t["description"],
                 )
-                category = categorize_merchant(transaction.description, transaction.amount, self.merchant_repo)
-                transaction.category = category
+                transaction.category = categorize_merchant(transaction.description, transaction.amount, self.merchant_repo)
                 self.repo.add_transaction(transaction)
             messagebox.showinfo("Success", "Bank statement uploaded successfully.")
             self.destroy()

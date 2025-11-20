@@ -1,6 +1,7 @@
 import logging
 import tkinter as tk
 from tkinter import ttk, messagebox
+from expense_tracker.core.model import MerchantCategory
 from expense_tracker.core.repository import TransactionRepository, MerchantCategoryRepository
 from expense_tracker.utils.merchant import normalize_merchant
 
@@ -57,8 +58,12 @@ class EditExpenseDialog(tk.Toplevel):
             self.amount_var.set(str(self.prev_data.amount))
             self.category_var.set(self.prev_data.category)
             self.description_var.set(self.prev_data.description)
-            if self.merchant_repo.get_category(normalize_merchant(self.prev_data.description)):
-                self.category_var.set(self.merchant_repo.get_category(normalize_merchant(self.prev_data.description)))
+
+            # Only suggest category if the current category is "Uncategorized"
+            if self.prev_data.category == "Uncategorized":
+                suggested_category = self.merchant_repo.get_category(normalize_merchant(self.prev_data.description))
+                if suggested_category:
+                    self.category_var.set(suggested_category.category)
 
     def _on_save(self):
         raw = self.amount_var.get()
@@ -79,9 +84,9 @@ class EditExpenseDialog(tk.Toplevel):
                 "description": self.description_var.get() or ""
             }
             self.repo.update_transaction(self.transaction_id, data)
-            if self.prev_data.category != data["category"]:
+            if self.prev_data is not None and self.prev_data.category != data["category"]:
                 normalized_merchant = normalize_merchant(self.prev_data.description)
-                self.merchant_repo.set_category(normalized_merchant, data["category"])
+                self.merchant_repo.set_category(MerchantCategory(normalized_merchant, data["category"]))
                 logger.debug(f"Normalized merchant: {normalized_merchant}")
                 logger.debug(f"Updated category in merchant repo: {self.merchant_repo.get_category(normalized_merchant)}")
             self.result = self.transaction_id

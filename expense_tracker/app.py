@@ -4,7 +4,6 @@ from gui.main_window import MainWindow
 from expense_tracker.version import versions
 
 def main():
-    # Get the absolute path to the database file
     transaction_repo = TransactionRepository("expense_tracker/data/transactions.db")
     merchant_repo = MerchantCategoryRepository("expense_tracker/data/merchant_categories.db")
     root = Tk()

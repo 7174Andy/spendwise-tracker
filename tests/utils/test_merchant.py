@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
+from expense_tracker.core.model import MerchantCategory
 from expense_tracker.utils.merchant import (
     normalize_merchant,
     categorize_merchant,
@@ -36,17 +37,17 @@ def mock_repo() -> MagicMock:
     """Fixture for a mocked MerchantCategoryRepository."""
     repo = MagicMock()
     merchants = {
-        "STARBUCKS": "Coffee",
-        "MCDONALDS": "Fast Food",
-        "TRADER JOE'S": "Groceries",
-        "NETFLIX": "Subscriptions",
+        "STARBUCKS": MerchantCategory("STARBUCKS", "Coffee"),
+        "MCDONALDS": MerchantCategory("MCDONALDS", "Fast Food"),
+        "TRADER JOE'S": MerchantCategory("TRADER JOE'S", "Groceries"),
+        "NETFLIX": MerchantCategory("NETFLIX", "Subscriptions"),
     }
 
-    def get_category(merchant: str) -> str | None:
+    def get_category(merchant: str) -> MerchantCategory | None:
         return merchants.get(merchant)
 
     repo.get_category.side_effect = get_category
-    repo.get_all_merchants.return_value = list(merchants.keys())
+    repo.get_all_merchants.return_value = list(merchants.values())
     return repo
 
 
@@ -72,7 +73,7 @@ def test_categorize_merchant_normalized_exact_match(mock_repo: MagicMock):
 def test_categorize_merchant_fuzzy_match(mock_repo: MagicMock):
     """Test categorization with a fuzzy merchant match."""
     # Make get_category only return a value for the "correct" fuzzy match
-    mock_repo.get_category.side_effect = lambda m: "Coffee" if m == "STARBUCKS" else None
+    mock_repo.get_category.side_effect = lambda m: MerchantCategory("STARBUCKS", "Coffee") if m == "STARBUCKS" else None
     
     assert categorize_merchant("Starbuck", -5.0, mock_repo) == "Coffee"
     
@@ -94,7 +95,7 @@ def test_categorize_merchant_no_match(mock_repo: MagicMock):
 def test_categorize_merchant_fuzzy_lookup_returns_none(mock_repo: MagicMock):
     """Test that it returns 'Other' if fuzzy lookup finds nothing."""
     mock_repo.get_category.return_value = None
-    mock_repo.get_all_merchants.return_value = ["A", "B", "C"] # No close matches
+    mock_repo.get_all_merchants.return_value = [MerchantCategory("A", "B"), MerchantCategory("B", "C")] # No close matches
     assert categorize_merchant("XYZ Corp", -10.0, mock_repo) == "Other"
 
 
@@ -127,10 +128,12 @@ def test_fuzzy_lookup_merchant_below_threshold(mock_repo: MagicMock):
     assert fuzzy_lookup_merchant("SBUX", threshold=95, merchant_repo=mock_repo) is None
     mock_repo.get_all_merchants.assert_called_once()
 
+
 def test_fuzzy_lookup_merchant_no_close_match(mock_repo: MagicMock):
     """Test fuzzy lookup with no reasonably close matches."""
     assert fuzzy_lookup_merchant("COMPLETELY UNKNOWN", merchant_repo=mock_repo) is None
     mock_repo.get_all_merchants.assert_called_once()
+
 
 def test_fuzzy_lookup_merchant_exact_match(mock_repo: MagicMock):
     """Test that an exact match is returned correctly by fuzzy lookup."""

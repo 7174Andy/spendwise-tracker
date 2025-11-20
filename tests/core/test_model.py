@@ -1,5 +1,5 @@
 from datetime import date
-from expense_tracker.core.model import Transaction
+from expense_tracker.core.model import Transaction, MerchantCategory
 
 
 def test_transaction_creation():
@@ -16,3 +16,12 @@ def test_transaction_creation():
     assert t.amount == 10.50
     assert t.category == "Food"
     assert t.description == "Lunch"
+
+def test_merchant_category_creation():
+    """Test that a MerchantCategory object can be created with correct values."""
+    mc = MerchantCategory(
+        merchant_key="amazon",
+        category="Shopping",
+    )
+    assert mc.merchant_key == "amazon"
+    assert mc.category == "Shopping"

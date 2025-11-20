@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from expense_tracker.core.model import Transaction
+from expense_tracker.core.model import MerchantCategory, Transaction
 from expense_tracker.core.repository import (
     MerchantCategoryRepository,
     TransactionRepository,
@@ -31,15 +31,19 @@ def in_memory_merchant_repo():
 
 def test_set_and_get_category(in_memory_merchant_repo):
     repo: MerchantCategoryRepository = in_memory_merchant_repo
-    repo.set_category("Amazon", "Shopping")
-    assert repo.get_category("Amazon") == "Shopping"
+    repo.set_category(MerchantCategory("Amazon", "Shopping"))
+    merchant_category = repo.get_category("Amazon")
+    assert merchant_category is not None
+    assert merchant_category.category == "Shopping"
 
 
 def test_update_category(in_memory_merchant_repo):
     repo: MerchantCategoryRepository = in_memory_merchant_repo
-    repo.set_category("Netflix", "Entertainment")
-    repo.set_category("Netflix", "Streaming")
-    assert repo.get_category("Netflix") == "Streaming"
+    repo.set_category(MerchantCategory("Netflix", "Entertainment"))
+    repo.set_category(MerchantCategory("Netflix", "Streaming"))
+    merchant_category = repo.get_category("Netflix")
+    assert merchant_category is not None
+    assert merchant_category.category == "Streaming"
 
 
 def test_get_non_existent_category(in_memory_merchant_repo):
@@ -49,12 +53,13 @@ def test_get_non_existent_category(in_memory_merchant_repo):
 
 def test_get_all_merchants(in_memory_merchant_repo):
     repo: MerchantCategoryRepository = in_memory_merchant_repo
-    repo.set_category("MerchantA", "Category1")
-    repo.set_category("MerchantB", "Category2")
+    repo.set_category(MerchantCategory("MerchantA", "Category1"))
+    repo.set_category(MerchantCategory("MerchantB", "Category2"))
     merchants = repo.get_all_merchants()
     assert len(merchants) == 2
-    assert "MerchantA" in merchants
-    assert "MerchantB" in merchants
+    merchant_keys = [m.merchant_key for m in merchants]
+    assert "MerchantA" in merchant_keys
+    assert "MerchantB" in merchant_keys
 
 
 
