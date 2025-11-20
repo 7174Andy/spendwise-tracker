@@ -3,7 +3,7 @@ import sqlite3
 from dataclasses import replace
 from datetime import date
 
-from expense_tracker.core.model import Transaction, MerchantCategory
+from expense_tracker.core.models import Transaction, MerchantCategory
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +61,15 @@ class TransactionRepository:
 
     def get_all_transactions(self, limit: int = 100, offset: int = 0) -> list[Transaction]:
         rows = self.conn.execute("SELECT * FROM transactions ORDER BY date DESC LIMIT ? OFFSET ?", (limit, offset))
+        transactions: list[Transaction] = []
+        for row in rows.fetchall():
+            transaction = self._row_to_transaction(row)
+            if transaction:
+                transactions.append(transaction)
+        return transactions
+    
+    def get_all_transactions_by_category(self, category: str) -> list[Transaction]:
+        rows = self.conn.execute("SELECT * FROM transactions WHERE category = ? ORDER BY date DESC", (category,))
         transactions: list[Transaction] = []
         for row in rows.fetchall():
             transaction = self._row_to_transaction(row)

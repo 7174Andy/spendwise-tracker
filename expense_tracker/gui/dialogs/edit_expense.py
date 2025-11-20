@@ -1,9 +1,9 @@
 import logging
 import tkinter as tk
 from tkinter import ttk, messagebox
-from expense_tracker.core.model import MerchantCategory
-from expense_tracker.core.repository import TransactionRepository, MerchantCategoryRepository
-from expense_tracker.utils.merchant import normalize_merchant
+from expense_tracker.core.repositories import TransactionRepository, MerchantCategoryRepository
+from expense_tracker.services.merchant import MerchantCategoryService
+from expense_tracker.utils.merchant_normalizer import normalize_merchant
 
 logger = logging.getLogger(__name__)
 
@@ -13,12 +13,20 @@ class EditExpenseDialog(tk.Toplevel):
         self.repo = repo
         self.merchant_repo = merchant_repo
         self.transaction_id = transaction_id
+        self.merchant_service = MerchantCategoryService(merchant_repo, repo, normalize_merchant)
         self.title("Edit Expense")
         self.resizable(False, False)
 
         self.amount_var = tk.StringVar()
         self.category_var = tk.StringVar()
         self.description_var = tk.StringVar()
+
+        self.progress_frame = ttk.Frame(self)
+        self.progress_frame.pack(fill="x", padx=10, pady=5)
+        self.progress_label = ttk.Label(self.progress_frame, text="")
+        self.progress_label.pack(side="left", padx=5)
+        self.progress_bar = ttk.Progressbar(self.progress_frame, mode='indeterminate')
+
         self.prev_data = None
 
         self._build_form()
@@ -84,18 +92,26 @@ class EditExpenseDialog(tk.Toplevel):
                 "description": self.description_var.get() or ""
             }
             self.repo.update_transaction(self.transaction_id, data)
+
+            # Check if we need to update merchant categories
             if self.prev_data is not None and self.prev_data.category != data["category"]:
-                normalized_merchant = normalize_merchant(self.prev_data.description)
-                self.merchant_repo.set_category(MerchantCategory(normalized_merchant, data["category"]))
-                logger.debug(f"Normalized merchant: {normalized_merchant}")
-                logger.debug(f"Updated category in merchant repo: {self.merchant_repo.get_category(normalized_merchant)}")
-            self.result = self.transaction_id
-            self.destroy()
-            messagebox.showinfo("Success", f"Transaction {self.transaction_id} updated.")
+                try:
+                    self.merchant_service.update_category(self.prev_data.description, data["category"])
+                    self.merchant_service.update_uncategorized_transactions()
+                    messagebox.showinfo("Success", f"Transaction {self.transaction_id} updated and related transactions recategorized.")
+                except Exception as e:
+                    messagebox.showerror("Error", f"Failed to update related transactions: {e}")
+                self.destroy()
+            else:
+                # No category change, just close the dialog
+                self.result = self.transaction_id
+                messagebox.showinfo("Success", f"Transaction {self.transaction_id} updated.")
+                self.destroy()
+
         except Exception as e:
             messagebox.showerror("Error", f"Failed to update transaction: {e}")
             return
-    
+
     def _on_cancel(self):
         self.result = None
         self.destroy()
