@@ -1,3 +1,4 @@
+import math
 import tkinter as tk
 from tkinter import ttk, messagebox
 
@@ -14,9 +15,13 @@ class MainWindow(tk.Frame):
         self.merchant_repo = merchant_repo
         self.master = master
         self._active_dialog: tk.Toplevel | None = None
+        self._current_page = 0
+        self._page_size = 100
+        self._total_transactions = 0
         self.pack(fill=tk.BOTH, expand=True)
         self._build_toolbar()
         self._build_body()
+        self._build_footer()
         self.refresh()
 
 
@@ -32,11 +37,38 @@ class MainWindow(tk.Frame):
         # Bind events
         self.tree.bind('<Double-1>', lambda e: self._edit_transaction())
 
+    def _build_footer(self):
+        footer = tk.Frame(self)
+        footer.pack(fill=tk.X, side=tk.BOTTOM)
+        self.prev_button = ttk.Button(footer, text="Previous", command=self._previous_page)
+        self.prev_button.pack(side=tk.LEFT, padx=5, pady=5)
+        self.page_label = ttk.Label(footer, text="")
+        self.page_label.pack(side=tk.LEFT, padx=5, pady=5)
+        self.next_button = ttk.Button(footer, text="Next", command=self._next_page)
+        self.next_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+    def _previous_page(self):
+        if self._current_page > 0:
+            self._current_page -= 1
+            self.refresh()
     
+    def _next_page(self):
+        self._current_page += 1
+        self.refresh()
+
     def refresh(self):
         for row in self.tree.get_children():
             self.tree.delete(row)
-        for transaction in self.transaction_repo.get_all_transactions():
+        
+        self._total_transactions = self.transaction_repo.count_all_transactions()
+        offset = self._current_page * self._page_size
+        
+        transactions = self.transaction_repo.get_all_transactions(
+            limit=self._page_size,
+            offset=offset,
+        )
+
+        for transaction in transactions:
             self.tree.insert(
                 "",
                 tk.END,
@@ -48,6 +80,12 @@ class MainWindow(tk.Frame):
                     transaction.description,
                 ),
             )
+        
+        total_pages = math.ceil(self._total_transactions / self._page_size)
+        self.page_label.config(text=f"Page {self._current_page + 1} of {total_pages}")
+
+        self.prev_button.config(state=tk.NORMAL if self._current_page > 0 else tk.DISABLED)
+        self.next_button.config(state=tk.NORMAL if offset + self._page_size < self._total_transactions else tk.DISABLED)
     
     def _build_toolbar(self):
         bar = tk.Frame(self)

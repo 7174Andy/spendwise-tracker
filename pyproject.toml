@@ -21,6 +21,9 @@ dev = [
     "ruff>=0.14.4",
 ]
 
+[project.scripts]
+expense-tracker = "expense_tracker.app:main"
+
 [tool.setuptools.packages.find]
 exclude = ["tests", "tests.*", "docs"]
 

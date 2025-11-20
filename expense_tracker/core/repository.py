@@ -59,14 +59,18 @@ class TransactionRepository:
         row = self.conn.execute("SELECT * FROM transactions WHERE id = ?", (transaction_id,))
         return self._row_to_transaction(row.fetchone())
 
-    def get_all_transactions(self, limit: int = 100) -> list[Transaction]:
-        rows = self.conn.execute("SELECT * FROM transactions ORDER BY date DESC LIMIT ?", (limit,))
+    def get_all_transactions(self, limit: int = 100, offset: int = 0) -> list[Transaction]:
+        rows = self.conn.execute("SELECT * FROM transactions ORDER BY date DESC LIMIT ? OFFSET ?", (limit, offset))
         transactions: list[Transaction] = []
         for row in rows.fetchall():
             transaction = self._row_to_transaction(row)
             if transaction:
                 transactions.append(transaction)
         return transactions
+
+    def count_all_transactions(self) -> int:
+        row = self.conn.execute("SELECT COUNT(*) FROM transactions")
+        return row.fetchone()[0]
 
     def daily_summary(self, date: str):
         rows = self.conn.execute("""
