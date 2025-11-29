@@ -156,7 +156,9 @@ class TransactionsTab(tk.Frame):
         return ids
 
     def _upload_statement(self):
-        self.main_window._open_dialog(UploadDialog, self.transaction_repo, self.merchant_repo)
+        self.main_window._open_dialog(
+            UploadDialog, self.transaction_repo, self.merchant_repo
+        )
 
     def _add_transaction(self):
         self.main_window._open_dialog(AddExpenseDialog, self.transaction_repo)
