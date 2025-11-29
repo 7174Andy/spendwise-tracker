@@ -18,6 +18,7 @@ class MainWindow(tk.Frame):
         self._current_page = 0
         self._page_size = 100
         self._total_transactions = 0
+        self._search_keyword: str | None = None
         self.pack(fill=tk.BOTH, expand=True)
         self._build_toolbar()
         self._build_body()
@@ -46,6 +47,8 @@ class MainWindow(tk.Frame):
         self.page_label.pack(side=tk.LEFT, padx=5, pady=5)
         self.next_button = ttk.Button(footer, text="Next", command=self._next_page)
         self.next_button.pack(side=tk.LEFT, padx=5, pady=5)
+        self.search_indicator = ttk.Label(footer, text="", foreground="white")
+        self.search_indicator.pack(side=tk.RIGHT, padx=5, pady=5)
 
     def _previous_page(self):
         if self._current_page > 0:
@@ -59,14 +62,25 @@ class MainWindow(tk.Frame):
     def refresh(self):
         for row in self.tree.get_children():
             self.tree.delete(row)
-        
-        self._total_transactions = self.transaction_repo.count_all_transactions()
+
         offset = self._current_page * self._page_size
-        
-        transactions = self.transaction_repo.get_all_transactions(
-            limit=self._page_size,
-            offset=offset,
-        )
+
+        # Use search if keyword is active, otherwise get all transactions
+        if self._search_keyword:
+            self._total_transactions = self.transaction_repo.count_search_results(self._search_keyword)
+            transactions = self.transaction_repo.search_by_keyword(
+                self._search_keyword,
+                limit=self._page_size,
+                offset=offset,
+            )
+            self.search_indicator.config(text=f"Search: {self._search_keyword}")
+        else:
+            self._total_transactions = self.transaction_repo.count_all_transactions()
+            transactions = self.transaction_repo.get_all_transactions(
+                limit=self._page_size,
+                offset=offset,
+            )
+            self.search_indicator.config(text="")
 
         for transaction in transactions:
             self.tree.insert(
@@ -80,8 +94,8 @@ class MainWindow(tk.Frame):
                     transaction.description,
                 ),
             )
-        
-        total_pages = math.ceil(self._total_transactions / self._page_size)
+
+        total_pages = math.ceil(self._total_transactions / self._page_size) if self._total_transactions > 0 else 1
         self.page_label.config(text=f"Page {self._current_page + 1} of {total_pages}")
 
         self.prev_button.config(state=tk.NORMAL if self._current_page > 0 else tk.DISABLED)
@@ -96,8 +110,11 @@ class MainWindow(tk.Frame):
         ttk.Button(bar, text="Refresh", command=self.refresh).pack(side=tk.LEFT, padx=5, pady=5)
         ttk.Button(bar, text="Import Statement", command=self._upload_statement).pack(side=tk.RIGHT, padx=5, pady=5)
         self.qvar = tk.StringVar()
-        ttk.Entry(bar, textvariable=self.qvar, width=30).pack(side=tk.LEFT, padx=5, pady=5)
+        search_entry = ttk.Entry(bar, textvariable=self.qvar, width=30)
+        search_entry.pack(side=tk.LEFT, padx=5, pady=5)
+        search_entry.bind('<Return>', lambda _: self._search_transactions())
         ttk.Button(bar, text="Search", command=self._search_transactions).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(bar, text="Clear Search", command=self._clear_search).pack(side=tk.LEFT, padx=5, pady=5)
         
 
     def _get_selected_ids(self) -> list[int]:
@@ -144,8 +161,21 @@ class MainWindow(tk.Frame):
             self.refresh()
 
     def _search_transactions(self):
-        query = self.qvar.get()
-        messagebox.showinfo("Search Transactions", f"Search for: {query}")
+        keyword = self.qvar.get().strip()
+        # Empty search clears the search
+        if not keyword:
+            self._clear_search()
+            return
+
+        self._search_keyword = keyword
+        self._current_page = 0  # Reset to first page
+        self.refresh()
+
+    def _clear_search(self):
+        self._search_keyword = None
+        self.qvar.set("")  # Clear the search entry field
+        self._current_page = 0  # Reset to first page
+        self.refresh()
     
     def _open_dialog(self, dialog_class, *args, **kwargs):
         if self._active_dialog is not None and self._active_dialog.winfo_exists():

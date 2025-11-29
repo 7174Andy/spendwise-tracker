@@ -81,6 +81,39 @@ class TransactionRepository:
         row = self.conn.execute("SELECT COUNT(*) FROM transactions")
         return row.fetchone()[0]
 
+    def search_by_keyword(self, keyword: str | None, limit: int = 100, offset: int = 0) -> list[Transaction]:
+        """
+        Search transactions by keyword in description field (case-insensitive).
+        Returns all transactions if keyword is None or empty.
+        """
+        if not keyword:
+            return self.get_all_transactions(limit, offset)
+
+        rows = self.conn.execute(
+            "SELECT * FROM transactions WHERE description LIKE ? COLLATE NOCASE ORDER BY date DESC LIMIT ? OFFSET ?",
+            (f"%{keyword}%", limit, offset)
+        )
+        transactions: list[Transaction] = []
+        for row in rows.fetchall():
+            transaction = self._row_to_transaction(row)
+            if transaction:
+                transactions.append(transaction)
+        return transactions
+
+    def count_search_results(self, keyword: str | None) -> int:
+        """
+        Count transactions matching the keyword.
+        Returns total count if keyword is None or empty.
+        """
+        if not keyword:
+            return self.count_all_transactions()
+
+        row = self.conn.execute(
+            "SELECT COUNT(*) FROM transactions WHERE description LIKE ? COLLATE NOCASE",
+            (f"%{keyword}%",)
+        )
+        return row.fetchone()[0]
+
     def daily_summary(self, date: str):
         rows = self.conn.execute("""
         SELECT category, SUM(amount) as total
