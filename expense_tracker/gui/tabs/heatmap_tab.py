@@ -183,7 +183,6 @@ class HeatmapTab(tk.Frame):
                     # Draw gray background for empty cells
                     empty_canvas.create_rectangle(
                         0, 0, 90, 70,
-                        fill="#EEEEEE",
                         outline="",
                     )
                 elif current_day <= num_days:
