@@ -7,6 +7,10 @@ Personal expense tracker desktop application that helps users manage their finan
 - **Language**: Python 3.11+
 - **GUI Framework**: Tkinter with ttkbootstrap (darkly theme)
 - **Database**: SQLite (two databases: transactions.db, merchant_categories.db)
+  - Stored in platform-specific user data directories
+  - macOS: `~/Library/Application Support/spendwise-tracker/`
+  - Linux/Unix: `~/.local/share/spendwise-tracker/`
+  - Windows: `%LOCALAPPDATA%\spendwise-tracker\`
 - **PDF Parsing**: pdfplumber
 - **Fuzzy Matching**: rapidfuzz (90% threshold for merchant categorization)
 - **Package Manager**: uv
