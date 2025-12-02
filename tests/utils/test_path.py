@@ -58,7 +58,7 @@ def test_get_database_path_merchant_categories():
     """Test merchant categories database path."""
     db_path = get_database_path("merchant_categories.db")
     assert db_path.name == "merchant_categories.db"
-    assert str(db_path).endswith("spendwise-tracker/merchant_categories.db")
+    assert db_path.parent == get_data_directory()
 
 
 def test_data_directory_on_current_platform():
