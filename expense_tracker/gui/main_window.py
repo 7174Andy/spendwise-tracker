@@ -2,7 +2,7 @@ import tkinter as tk
 from datetime import date
 from tkinter import ttk
 
-from expense_tracker.gui.tabs import TransactionsTab, HeatmapTab
+from expense_tracker.gui.tabs import TransactionsTab, HeatmapTab, StatisticsTab
 
 
 class MainWindow(tk.Frame):
@@ -24,11 +24,15 @@ class MainWindow(tk.Frame):
             self.notebook, transaction_repo, merchant_repo, self
         )
 
+        # Create Statistics tab
+        self.statistics_tab = StatisticsTab(self.notebook, transaction_repo)
+
         # Create Heatmap tab
         self.heatmap_tab = HeatmapTab(self.notebook, transaction_repo, self)
 
         # Add tabs to notebook
         self.notebook.add(self.transactions_tab, text="Transactions")
+        self.notebook.add(self.statistics_tab, text="Statistics")
         self.notebook.add(self.heatmap_tab, text="Heatmap")
 
         # Bind tab change event for lazy loading
@@ -64,7 +68,9 @@ class MainWindow(tk.Frame):
         """Refresh tab content when user switches tabs."""
         current_tab = self.notebook.select()
         tab_index = self.notebook.index(current_tab)
-        if tab_index == 1:  # Heatmap tab
+        if tab_index == 1:  # Statistics tab
+            self.statistics_tab.refresh()
+        elif tab_index == 2:  # Heatmap tab
             self.heatmap_tab.refresh()
 
     def show_transactions_for_date(self, target_date: date):
