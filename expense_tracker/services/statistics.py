@@ -25,6 +25,16 @@ class StatisticsService:
     def __init__(self, transaction_repo: TransactionRepository):
         self.transaction_repo = transaction_repo
 
+    @staticmethod
+    def _get_month_date_range(year: int, month: int) -> tuple[date, date]:
+        """Helper to get start and end date for a given month."""
+        start_date = date(year, month, 1)
+        if month == 12:
+            end_date = date(year + 1, 1, 1)
+        else:
+            end_date = date(year, month + 1, 1)
+        return start_date, end_date
+
     def get_monthly_metrics(self, year: int, month: int) -> MonthlyMetrics:
         """
         Get comprehensive monthly metrics by combining multiple repository queries.
@@ -32,11 +42,7 @@ class StatisticsService:
         Returns:
             MonthlyMetrics with net income and top spending category
         """
-        start_date = date(year, month, 1)
-        if month == 12:
-            end_date = date(year + 1, 1, 1)
-        else:
-            end_date = date(year, month + 1, 1)
+        start_date, end_date = self._get_month_date_range(year, month)
         net_income = self.transaction_repo.get_monthly_net_income(start_date, end_date)
         top_category_data = self.transaction_repo.get_top_spending_category(start_date, end_date)
 
@@ -61,11 +67,7 @@ class StatisticsService:
             Dictionary mapping day (1-31) to spending amount
         """
         # Create date range for the month
-        start_date = date(year, month, 1)
-        if month == 12:
-            end_date = date(year + 1, 1, 1)
-        else:
-            end_date = date(year, month + 1, 1)
+        start_date, end_date = self._get_month_date_range(year, month)
         return self.transaction_repo.get_daily_spending_range(start_date, end_date)
 
     def get_available_months(self, expenses_only: bool = False) -> list[tuple[int, int]]:
